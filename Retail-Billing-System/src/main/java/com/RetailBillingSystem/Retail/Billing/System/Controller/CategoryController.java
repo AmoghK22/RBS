@@ -1,6 +1,7 @@
 package com.RetailBillingSystem.Retail.Billing.System.Controller;
 
 
+import com.RetailBillingSystem.Retail.Billing.System.Entity.CategoryEntity;
 import com.RetailBillingSystem.Retail.Billing.System.Service.CategoryService;
 import com.RetailBillingSystem.Retail.Billing.System.io.CategoryRequest;
 import com.RetailBillingSystem.Retail.Billing.System.io.CategoryResponse;
@@ -41,6 +42,5 @@ public class CategoryController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
-
 
 }

@@ -2,6 +2,18 @@ import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { ShoppingCart, Plus, Minus } from "lucide-react";
 
+/* ================= RAZORPAY LOADER ================= */
+
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function Explore() {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
@@ -69,6 +81,52 @@ export default function Explore() {
 
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const tax = total * 0.01;
+  const grandTotal = total + tax;
+
+  /* ================= RAZORPAY PAYMENT ================= */
+
+  const handleUPIPayment = async () => {
+  if (cart.length === 0) {
+    alert("Cart is empty");
+    return;
+  }
+
+  const loaded = await loadRazorpay();
+  if (!loaded) {
+    alert("Razorpay SDK failed to load");
+    return;
+  }
+
+  const res = await api.post("/api/payments/create-order", {
+    amount: Math.round(grandTotal * 100), // paise
+    currency: "INR",
+    method: "UPI"
+  });
+
+  const order = res.data; // ✅ NO JSON.parse
+
+  const options = {
+    key: "rzp_test_S5iaLqNEs3rz3u",
+    amount: order.amount,
+    currency: order.currency,
+    name: "Retail Billing System",
+    description: "Order Payment",
+    order_id: order.razorpayOrderId,
+
+    handler: function (response) {
+      console.log("Payment Success", response);
+      alert("Payment Successful");
+      console.log(cart);
+      setCart([]);
+    },
+
+    theme: { color: "#facc15" }
+  };
+
+  const rzp = new window.Razorpay(options);
+  rzp.open();
+};
+
 
   /* ================= UI ================= */
 
@@ -118,8 +176,7 @@ export default function Explore() {
               <div
                 key={item.itemId}
                 className="bg-gray-700 rounded-lg p-4 flex flex-col justify-between
-                           transition transform duration-200
-                           hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30"
+                           hover:-translate-y-1 transition"
               >
                 <div>
                   <div className="font-semibold">{item.name}</div>
@@ -130,7 +187,7 @@ export default function Explore() {
                   <ShoppingCart size={18} className="text-yellow-400" />
                   <button
                     onClick={() => addToCart(item)}
-                    className="bg-green-600 hover:bg-green-700 p-2 rounded transition"
+                    className="bg-green-600 p-2 rounded"
                   >
                     <Plus size={16} />
                   </button>
@@ -143,48 +200,29 @@ export default function Explore() {
         {/* ================= RIGHT (CART) ================= */}
         <div className="bg-gray-800 rounded-xl p-6 h-[720px] flex flex-col">
 
-          {/* CUSTOMER INFO */}
-          <input
-            placeholder="Customer name"
-            className="w-full mb-3 bg-gray-700 px-3 py-2 rounded"
-          />
-          <input
-            placeholder="Mobile number"
-            className="w-full mb-4 bg-gray-700 px-3 py-2 rounded mb-10"
-          />
-
           {/* CART ITEMS */}
-          <div className="flex-1 overflow-y-auto mb-4 space-y-2 pr-1">
+          <div className="flex-1 overflow-y-auto mb-4 space-y-2">
             {cart.length === 0 ? (
               <p className="text-gray-400 text-sm">Your cart is empty.</p>
             ) : (
               cart.map((c) => (
                 <div
                   key={c.itemId}
-                  className="grid grid-cols-[1fr_120px_90px] items-center
-                             bg-gray-700 px-3 py-7 rounded"
+                  className="grid grid-cols-[1fr_120px_90px] bg-gray-700 px-3 py-4 rounded"
                 >
-                  <span className="truncate text-sm">{c.name}</span>
+                  <span>{c.name}</span>
 
                   <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => decreaseQty(c.itemId)}
-                      className="bg-red-600 hover:bg-red-700 p-1 rounded transition"
-                    >
+                    <button onClick={() => decreaseQty(c.itemId)} className="bg-red-600 p-1 rounded">
                       <Minus size={14} />
                     </button>
-
-                    <span className="w-6 text-center">{c.qty}</span>
-
-                    <button
-                      onClick={() => increaseQty(c.itemId)}
-                      className="bg-green-600 hover:bg-green-700 p-1 rounded transition"
-                    >
+                    <span>{c.qty}</span>
+                    <button onClick={() => increaseQty(c.itemId)} className="bg-green-600 p-1 rounded">
                       <Plus size={14} />
                     </button>
                   </div>
 
-                  <span className="text-right font-medium tabular-nums">
+                  <span className="text-right">
                     ₹{(c.price * c.qty).toFixed(2)}
                   </span>
                 </div>
@@ -192,30 +230,28 @@ export default function Explore() {
             )}
           </div>
 
-          {/* TOTALS */}
+          {/* TOTAL */}
           <div className="border-t border-gray-600 pt-4 text-sm space-y-2">
             <div className="flex justify-between">
-              <span>Item:</span>
+              <span>Items</span>
               <span>₹{total.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Tax (1%):</span>
+              <span>Tax (1%)</span>
               <span>₹{tax.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between font-semibold">
-              <span>Total:</span>
-              <span>₹{(total + tax).toFixed(2)}</span>
+            <div className="flex justify-between font-bold">
+              <span>Total</span>
+              <span>₹{grandTotal.toFixed(2)}</span>
             </div>
           </div>
 
           {/* PAYMENT */}
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            <button className="bg-green-600 py-2 rounded">Cash</button>
-            <button className="bg-blue-600 py-2 rounded">UPI</button>
-          </div>
-
-          <button className="w-full mt-4 bg-yellow-600 text-black py-2 rounded">
-            Place Order
+          <button
+            onClick={handleUPIPayment}
+            className="w-full mt-6 bg-blue-600 py-2 rounded"
+          >
+            Pay with UPI
           </button>
         </div>
       </div>
@@ -230,11 +266,7 @@ function CategoryCard({ label, count, active, onClick }) {
     <button
       onClick={onClick}
       className={`min-w-[160px] p-4 rounded-lg text-left
-        transition-all duration-200 hover:scale-[1.03]
-        ${active
-          ? "bg-yellow-500 text-black shadow-lg"
-          : "bg-gray-700 hover:bg-gray-600"
-        }`}
+        ${active ? "bg-yellow-500 text-black" : "bg-gray-700"}`}
     >
       <div className="font-semibold">{label}</div>
       <div className="text-sm">{count} Items</div>

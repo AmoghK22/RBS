@@ -21,6 +21,9 @@ export default function Explore() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
 
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+
   /* ================= FETCH DATA ================= */
 
   useEffect(() => {
@@ -83,62 +86,83 @@ export default function Explore() {
   const tax = total * 0.01;
   const grandTotal = total + tax;
 
+  /* ================= SAVE ORDER ================= */
+
+  const saveOrderToBackend = async () => {
+    await api.post("/api/orders", {
+      customerName,
+      phoneNumber: customerPhone,
+      totalAmount: grandTotal,
+      items: cart.map((c) => ({
+        itemName: c.name,
+        price: c.price,
+        quantity: c.qty,
+      })),
+    });
+  };
+
   /* ================= RAZORPAY PAYMENT ================= */
 
   const handleUPIPayment = async () => {
-  if (cart.length === 0) {
-    alert("Cart is empty");
-    return;
-  }
+    if (cart.length === 0) {
+      alert("Cart is empty");
+      return;
+    }
 
-  const loaded = await loadRazorpay();
-  if (!loaded) {
-    alert("Razorpay SDK failed to load");
-    return;
-  }
+    if (!customerName || !customerPhone) {
+      alert("Enter customer details");
+      return;
+    }
 
-  const res = await api.post("/api/payments/create-order", {
-    amount: Math.round(grandTotal * 100), // paise
-    currency: "INR",
-    method: "UPI"
-  });
+    const loaded = await loadRazorpay();
+    if (!loaded) {
+      alert("Razorpay SDK failed to load");
+      return;
+    }
 
-  const order = res.data; // ✅ NO JSON.parse
+    const res = await api.post("/api/payments/create-order", {
+      amount: Math.round(grandTotal * 100),
+      currency: "INR",
+      method: "UPI",
+    });
 
-  const options = {
-    key: "rzp_test_S5iaLqNEs3rz3u",
-    amount: order.amount,
-    currency: order.currency,
-    name: "Retail Billing System",
-    description: "Order Payment",
-    order_id: order.razorpayOrderId,
+    const order = res.data;
 
-    handler: function (response) {
-      console.log("Payment Success", response);
-      alert("Payment Successful");
-      console.log(cart);
-      setCart([]);
-    },
+    const options = {
+      key: "rzp_test_S5iaLqNEs3rz3u",
+      amount: order.amount,
+      currency: order.currency,
+      name: "Retail Billing System",
+      description: "Order Payment",
+      order_id: order.razorpayOrderId,
 
-    theme: { color: "#facc15" }
+      handler: async function () {
+        await saveOrderToBackend();
+        alert("Payment Successful");
+
+        setCart([]);
+        setCustomerName("");
+        setCustomerPhone("");
+      },
+
+      theme: { color: "#facc15" },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
   };
-
-  const rzp = new window.Razorpay(options);
-  rzp.open();
-};
-
 
   /* ================= UI ================= */
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="bg-gray-900 text-white h-screen overflow-hidden p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
 
         {/* ================= LEFT ================= */}
-        <div className="lg:col-span-2 bg-gray-800 rounded-xl p-6">
+        <div className="lg:col-span-2 bg-gray-800 rounded-xl p-6 h-full flex flex-col">
 
           {/* CATEGORIES */}
-          <div className="flex gap-4 mb-6 pb-6 overflow-x-auto">
+          <div className="flex gap-4 mb-6 pb-2 overflow-x-auto">
             <CategoryCard
               label="All Items"
               count={items.length}
@@ -171,37 +195,54 @@ export default function Explore() {
           </div>
 
           {/* ITEMS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {filteredItems.map((item) => (
-              <div
-                key={item.itemId}
-                className="bg-gray-700 rounded-lg p-4 flex flex-col justify-between
-                           hover:-translate-y-1 transition"
-              >
-                <div>
-                  <div className="font-semibold">{item.name}</div>
-                  <div className="text-sm text-gray-400">₹{item.price}</div>
-                </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {filteredItems.map((item) => (
+                <div
+                  key={item.itemId}
+                  className="bg-gray-700 rounded-lg p-4 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="font-semibold">{item.name}</div>
+                    <div className="text-sm text-gray-400">₹{item.price}</div>
+                  </div>
 
-                <div className="flex justify-between items-center mt-4">
-                  <ShoppingCart size={18} className="text-yellow-400" />
-                  <button
-                    onClick={() => addToCart(item)}
-                    className="bg-green-600 p-2 rounded"
-                  >
-                    <Plus size={16} />
-                  </button>
+                  <div className="flex justify-between items-center mt-4">
+                    <ShoppingCart size={18} className="text-yellow-400" />
+                    <button
+                      onClick={() => addToCart(item)}
+                      className="bg-green-600 p-2 rounded"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* ================= RIGHT (CART) ================= */}
-        <div className="bg-gray-800 rounded-xl p-6 h-[720px] flex flex-col">
+        {/* ================= RIGHT ================= */}
+        <div className="bg-gray-800 rounded-xl p-6 h-full flex flex-col">
 
-          {/* CART ITEMS */}
-          <div className="flex-1 overflow-y-auto mb-4 space-y-2">
+          {/* CUSTOMER DETAILS */}
+          <div className="mb-4 space-y-3">
+            <input
+              placeholder="Customer Name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="w-full bg-gray-700 px-3 py-2 rounded text-sm"
+            />
+            <input
+              placeholder="Phone Number"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className="w-full bg-gray-700 px-3 py-2 rounded text-sm"
+            />
+          </div>
+
+          {/* CART */}
+          <div className="flex-1 overflow-y-auto space-y-2">
             {cart.length === 0 ? (
               <p className="text-gray-400 text-sm">Your cart is empty.</p>
             ) : (
@@ -212,7 +253,7 @@ export default function Explore() {
                 >
                   <span>{c.name}</span>
 
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex justify-center gap-2">
                     <button onClick={() => decreaseQty(c.itemId)} className="bg-red-600 p-1 rounded">
                       <Minus size={14} />
                     </button>
@@ -222,9 +263,7 @@ export default function Explore() {
                     </button>
                   </div>
 
-                  <span className="text-right">
-                    ₹{(c.price * c.qty).toFixed(2)}
-                  </span>
+                  <span className="text-right">₹{(c.price * c.qty).toFixed(2)}</span>
                 </div>
               ))
             )}
@@ -246,10 +285,9 @@ export default function Explore() {
             </div>
           </div>
 
-          {/* PAYMENT */}
           <button
             onClick={handleUPIPayment}
-            className="w-full mt-6 bg-blue-600 py-2 rounded"
+            className="mt-6 bg-blue-600 py-2 rounded"
           >
             Pay with UPI
           </button>
@@ -265,8 +303,9 @@ function CategoryCard({ label, count, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`min-w-[160px] p-4 rounded-lg text-left
-        ${active ? "bg-yellow-500 text-black" : "bg-gray-700"}`}
+      className={`min-w-[160px] p-4 rounded-lg text-left ${
+        active ? "bg-yellow-500 text-black" : "bg-gray-700"
+      }`}
     >
       <div className="font-semibold">{label}</div>
       <div className="text-sm">{count} Items</div>

@@ -131,7 +131,7 @@ export default function Explore() {
     const order = res.data;
 
     const options = {
-      key: "rzp_test_S5iaLqNEs3rz3u",
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
       amount: order.amount,
       currency: order.currency,
       name: "Retail Billing System",

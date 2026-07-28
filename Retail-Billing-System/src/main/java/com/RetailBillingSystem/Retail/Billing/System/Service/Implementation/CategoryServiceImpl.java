@@ -69,6 +69,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .categoryId(newCategory.getCategoryId())
                 .name(newCategory.getName())
                 .description(newCategory.getDescription())
+                .imgUrl(newCategory.getImgUrl())
                 .createdAt(newCategory.getCreatedAt())
                 .updatedAt(newCategory.getUpdatedAt())
              .items(itemCount)
@@ -79,12 +80,11 @@ public class CategoryServiceImpl implements CategoryService {
     //thats we want to do because data comes as CategoryRequest type from user but we need to store it to DB which is in CategoryEntity type
 
     private CategoryEntity convertToEntity(CategoryRequest request) {
-
-
         return CategoryEntity.builder()
                 .categoryId(UUID.randomUUID().toString())
                 .name(request.getName())
                 .description(request.getDescription())
+                .imgUrl(request.getImgUrl())
                 .build();
     }
 }

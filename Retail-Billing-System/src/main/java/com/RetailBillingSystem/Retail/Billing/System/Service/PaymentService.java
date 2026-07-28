@@ -7,4 +7,5 @@ import com.razorpay.RazorpayException;
 public interface PaymentService {
 
     PaymentResponse createOrder(PaymentRequest request) throws RazorpayException;
+    void updatePaymentStatus(String razorpayOrderId, String razorpayPaymentId, String status);
 }

@@ -36,8 +36,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/users/register",
-                                "/users/login",
-                                "/api/payments/**"   // ✅ ALLOW PAYMENTS
+                                "/users/login"
                         ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

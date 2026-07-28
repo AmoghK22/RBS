@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { ShoppingCart, Plus, Minus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* ================= RAZORPAY LOADER ================= */
 
@@ -15,6 +16,7 @@ const loadRazorpay = () => {
 };
 
 export default function Explore() {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
@@ -136,7 +138,11 @@ export default function Explore() {
       description: "Order Payment",
       order_id: order.razorpayOrderId,
 
-      handler: async function () {
+      handler: async function (response) {
+        await api.post("/api/payments/verify", {
+          razorpayOrderId: order.razorpayOrderId,
+          razorpayPaymentId: response.razorpay_payment_id,
+        });
         await saveOrderToBackend();
         alert("Payment Successful");
 

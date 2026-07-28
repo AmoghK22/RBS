@@ -9,5 +9,7 @@ public class PaymentRequest {
 
     private Integer amount;
     private String currency;
-    private String method;   // UPI / CASH
+    private String method;
+    private String razorpayOrderId;
+    private String razorpayPaymentId;
 }

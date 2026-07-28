@@ -20,7 +20,6 @@ public class ItemResponse {
     private String description;
     private String categoryId;
     private String categoryName;
-    private String imgUrl;
     private Timestamp createdAt;
     private Timestamp updatedAt;
 

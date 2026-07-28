@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState } from "react";
+import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../UserContext.jsx";
-
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,30 +15,14 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await axios.post(
-        "http://localhost:8082/users/login",
-        { email, password }
-      );
-
-      /*
-        EXPECTED BACKEND RESPONSE (example):
-        {
-          "userId": "uuid",
-          "name": "John Doe",
-          "email": "john@gmail.com",
-          "role": "ADMIN"
-        }
-      */
-
+      const response = await api.post("/users/login", { email, password });
       const user = response.data;
 
-localStorage.setItem("token", user.token);
-localStorage.setItem("user", JSON.stringify(user));
-updateUser(user);
+      localStorage.setItem("token", user.token);
+      localStorage.setItem("user", JSON.stringify(user));
+      updateUser(user);
 
-navigate("/dashboard");
-
-
+      navigate("/dashboard");
     } catch (err) {
       setError("Invalid email or password");
     }

@@ -67,7 +67,6 @@ public class UserService {
                 .userId(user.getUserId())
                 .name(user.getName())
                 .email(user.getEmail())
-                .password(user.getPassword()) // Note: In real app, don't return password
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())

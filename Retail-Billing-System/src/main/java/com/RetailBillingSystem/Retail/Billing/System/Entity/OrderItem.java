@@ -25,9 +25,8 @@ public class OrderItem {
 
 
     @ManyToOne
-    @JsonIgnore   // 🔥 THIS LINE FIXES EVERYTHING
+    @JsonIgnore
     @JoinColumn(name = "order_id")
     private Order order;
 
-    // getters & setters
 }

@@ -6,6 +6,7 @@ import com.RetailBillingSystem.Retail.Billing.System.io.PaymentResponse;
 import com.razorpay.RazorpayException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,5 +24,15 @@ public class PaymentController {
     ) throws RazorpayException {
 
         return paymentService.createOrder(request);
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyPayment(@RequestBody PaymentRequest request) {
+        paymentService.updatePaymentStatus(
+                request.getRazorpayOrderId(),
+                request.getRazorpayPaymentId(),
+                "PAID"
+        );
+        return ResponseEntity.ok("Payment verified successfully");
     }
 }

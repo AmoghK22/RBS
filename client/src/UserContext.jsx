@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const UserContext = createContext();
 
@@ -18,13 +18,6 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
   };
-
-  useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
-  }, []);
 
   return (
     <UserContext.Provider value={{ user, updateUser, logout }}>

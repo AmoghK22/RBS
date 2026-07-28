@@ -11,5 +11,5 @@ public interface CategoryService {
 
    List<CategoryResponse> read();
 
-   void delete(String categoryIds);
+   void delete(String categoryId);
 }

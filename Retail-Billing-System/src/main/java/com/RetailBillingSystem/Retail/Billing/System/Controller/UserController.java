@@ -80,10 +80,10 @@ public ResponseEntity<?> login(@RequestBody UserRequest userRequest) {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserEntity> getUserById(@PathVariable String id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         UserEntity user = userService.findByUserId(id);
         if (user != null) {
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(userService.mapToResponse(user));
         } else {
             return ResponseEntity.notFound().build();
         }

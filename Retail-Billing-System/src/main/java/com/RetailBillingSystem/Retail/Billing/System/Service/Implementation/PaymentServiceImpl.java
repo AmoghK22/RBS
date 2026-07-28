@@ -25,7 +25,6 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponse createOrder(PaymentRequest request)
             throws RazorpayException {
 
-        // 1️⃣ Create Razorpay Order
         JSONObject options = new JSONObject();
         options.put("amount", request.getAmount());
         options.put("currency", request.getCurrency());
@@ -33,18 +32,22 @@ public class PaymentServiceImpl implements PaymentService {
 
         Order order = razorpayClient.orders.create(options);
 
-        // 2️⃣ Convert Request → Entity
         PaymentEntity paymentEntity = convertToEntity(request, order.get("id"));
-
-        // 3️⃣ Save to DB
         paymentRepository.save(paymentEntity);
 
-        // 4️⃣ Convert Entity → Response
         return convertToResponse(paymentEntity);
     }
 
-    private PaymentEntity convertToEntity(PaymentRequest request, String razorpayOrderId) {
+    @Override
+    public void updatePaymentStatus(String razorpayOrderId, String razorpayPaymentId, String status) {
+        PaymentEntity payment = paymentRepository.findByRazorpayOrderId(razorpayOrderId)
+                .orElseThrow(() -> new RuntimeException("Payment not found: " + razorpayOrderId));
+        payment.setRazorpayPaymentId(razorpayPaymentId);
+        payment.setStatus(status);
+        paymentRepository.save(payment);
+    }
 
+    private PaymentEntity convertToEntity(PaymentRequest request, String razorpayOrderId) {
         return PaymentEntity.builder()
                 .paymentId(UUID.randomUUID().toString())
                 .razorpayOrderId(razorpayOrderId)
@@ -56,7 +59,6 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private PaymentResponse convertToResponse(PaymentEntity entity) {
-
         return PaymentResponse.builder()
                 .paymentId(entity.getPaymentId())
                 .razorpayOrderId(entity.getRazorpayOrderId())
